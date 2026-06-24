@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Editor / tooling local config
+.claude/
+
+# Local environment and dependency folders
+.env
+.env.*
+node_modules/
+*.log
+
+# Pristine full-resolution photo originals (kept locally, not published)
+_originals/

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Research — Caitlin Cisar</title>
+  <meta name="description" content="Research and projects by Caitlin Cisar — linguistics, NLP, LLMs, and data science." />
+  <meta name="author" content="Caitlin Cisar" />
+  <meta name="theme-color" content="#060a14" />
+
+  <!-- Social sharing. Base URL is the live custom domain -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Caitlin Cisar" />
+  <meta property="og:title" content="Research &amp; Projects — Caitlin Cisar" />
+  <meta property="og:description" content="Research and projects by Caitlin Cisar — linguistics, NLP, LLMs, and data science." />
+  <meta property="og:url" content="https://www.caitlincisar.com/research.html" />
+  <meta property="og:image" content="https://www.caitlincisar.com/images/polaroid-1.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Research &amp; Projects — Caitlin Cisar" />
+  <meta name="twitter:description" content="Research and projects by Caitlin Cisar — linguistics, NLP, LLMs, and data science." />
+  <meta name="twitter:image" content="https://www.caitlincisar.com/images/polaroid-1.jpg" />
+
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="stylesheet" href="style.css" />
+  <noscript><style>[data-reveal]{opacity:1 !important;transform:none !important;}</style></noscript>
+</head>
+<body>
+
+  <div class="night-grid" aria-hidden="true"></div>
+  <main>
+    <div class="container">
+
+      <section class="terminal" data-reveal aria-label="Interactive research terminal">
+        <div class="term-bar">
+          <span class="term-dots" aria-hidden="true">
+            <i class="td td-r"></i><i class="td td-y"></i><i class="td td-g"></i>
+          </span>
+          <span class="term-title">visitor@caitlincisar — research — zsh</span>
+          <span class="term-meta" id="termMeta">4 files</span>
+        </div>
+
+        <div class="term-screen" id="termScreen">
+          <div class="term-output" id="termOutput" role="log" aria-live="polite"></div>
+
+          <label class="term-inputline" for="termInput" id="termInputLine">
+            <span class="term-prompt" aria-hidden="true"><span class="tp-user">visitor</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">:~$</span></span>
+            <span class="term-typed" id="termTyped"></span><span class="term-cursor" id="termCursor" aria-hidden="true"></span>
+            <input id="termInput" class="term-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Terminal command input" />
+          </label>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+  // ── RESEARCH TERMINAL ────────────────────────────────────────────
+  (function() {
+    const screen  = document.getElementById('termScreen');
+    const output  = document.getElementById('termOutput');
+    const input   = document.getElementById('termInput');
+    const typed   = document.getElementById('termTyped');
+    const line    = document.getElementById('termInputLine');
+    if (!screen || !input) return;
+
+    // ── Visitor handle (set via the Purrsona widget) ───────────────
+    let USER = (() => {
+      try { return localStorage.getItem('purrsona-user') || 'visitor'; }
+      catch (e) { return 'visitor'; }
+    })();
+    function applyUser() {
+      const u = line.querySelector('.tp-user');
+      if (u) u.textContent = USER;
+      const title = document.querySelector('.term-title');
+      if (title) title.textContent = USER + '@caitlincisar — research — zsh';
+    }
+    window.addEventListener('purrsona-user-set', (e) => {
+      USER = e.detail || USER;
+      applyUser();
+    });
+
+    // ── Project "files" ────────────────────────────────────────────
+    const PROJECTS = [
+      {
+        file: 'pilot.md',
+        title: 'PILOT: Steering Synthetic Data Generation with Psychological & Linguistic Output Targeting',
+        body: [
+          'Generative AI applications commonly use natural language personas to steer synthetic data generation, but this forces models to make unintended inferences about which attributes to emphasize — limiting precise control. PILOT (Psychological and Linguistic Output Targeting) is a two-phase framework that addresses this by translating natural language persona descriptions into structured psycholinguistic profiles, then using those profiles to guide LLM generation along measurable axes of variation.',
+          'Evaluated across three state-of-the-art LLMs (Mistral Large 2, DeepSeek-R1, LLaMA 3.3 70B) using 25 synthetic personas under three conditions — Natural-language Persona Steering (NPS), Schema-Based Steering (SBS), and Hybrid Persona-Schema Steering (HPS) — results show schema-based approaches significantly reduce artificial-sounding repetition while improving coherence: silhouette scores rose from 0.098 to 0.237 and topic purity from 0.773 to 0.957. HPS balances the trade-offs between lexical diversity and structural consistency, and expert linguistic evaluation confirms high response quality across all conditions.'
+        ],
+        tags: ['Synthetic Data', 'LLMs', 'Psycholinguistics', 'Data Quality', 'NLP'],
+        link: { label: 'Read on arXiv', url: 'https://arxiv.org/abs/2509.15447' }
+      },
+      {
+        file: 'digi-arcade.md',
+        title: 'digi.arcade: A Mini Arcade of Digital Tools & Oddities',
+        body: [
+          'A mini "arcade" where you can find tiny tools and digital oddities. "Digis" are lightweight, functional web pages built with just HTML, CSS, and JavaScript. The arcade features a variety of unproductivity tools and utilities to help with niche, probably unlikely, needs; like a banner of moving topics that can explode upon being clicked but eventually regenerate. (Very practical!) However, among the chaos, sometimes true usefulness converges. For example, digi.regex is a sandbox for testing regular expressions that comes with practice exercises. See all the practicality?'
+        ],
+        tags: ['Web', 'JavaScript', 'Creative Coding', 'Experiments'],
+        link: null
+      },
+      {
+        file: 'purrsona-generator.md',
+        title: 'Purrsona Generator: A Mini Linguistics-Based Cat Name Generator',
+        body: [
+          'A mini linguistics-based tool that generates cat names using phonaesthetics, morphological templates, and a few other controllable parameters. Built in pure JS, hosted on GitHub Pages.'
+        ],
+        tags: ['Linguistics', 'Phonology', 'JavaScript', 'GitHub Pages'],
+        link: { label: 'Visit project', url: 'https://ccisar.github.io/purrsona-generator/' }
+      },
+      {
+        file: 'llm-speak-classifier.md',
+        title: 'Classify Me If You Can: A Naive Bayes Classifier to Detect "LLM Speak"',
+        body: [
+          'Can a simple Naive Bayes classifier reliably detect LLM-generated text based on characteristic lexical patterns like hedging, overused discourse markers, and formulaic structures? This project investigates the linguistic fingerprints of generated text.'
+        ],
+        tags: ['Machine Learning', 'NLP', 'LLMs', 'Classification', 'Python'],
+        link: null
+      }
+    ];
+
+    const byFile = new Map(PROJECTS.map(p => [p.file, p]));
+    const termMeta = document.getElementById('termMeta');
+    if (termMeta) termMeta.textContent = PROJECTS.length + ' files';
+    const HISTORY = [];
+    let histIdx = -1;
+
+    // ── DOM helpers ────────────────────────────────────────────────
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+    function el(tag, cls, html) {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (html != null) n.innerHTML = html;
+      return n;
+    }
+    function print(node) {
+      output.appendChild(node);
+      screen.scrollTop = screen.scrollHeight;
+    }
+    function printLine(cls, html) { print(el('div', 'term-line ' + (cls || ''), html)); }
+
+    function fileSpan(file) {
+      return `<span class="term-file" data-cmd="cat ${esc(file)}" role="button" tabindex="0">${esc(file)}</span>`;
+    }
+
+    // ── Command echo ───────────────────────────────────────────────
+    function echo(cmd) {
+      const row = el('div', 'term-line term-echo');
+      row.innerHTML =
+        `<span class="term-prompt"><span class="tp-user">${esc(USER)}</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">:~$</span></span> ` +
+        `<span class="term-echo-cmd">${esc(cmd)}</span>`;
+      print(row);
+    }
+
+    // ── Commands ───────────────────────────────────────────────────
+    const COMMANDS = {
+      help() {
+        const rows = [
+          ['ls',            'list all project files'],
+          ['cat <file>',    'read a project (or click any file)'],
+          ['open <file>',   'open a project’s external link'],
+          ['tags',          'list every research topic'],
+          ['whoami',        'about the author'],
+          ['clear',         'clear the screen'],
+          ['help',          'show this list']
+        ];
+        const grid = el('div', 'term-help');
+        grid.innerHTML = rows.map(([c, d]) =>
+          `<span class="th-cmd">${esc(c)}</span><span class="th-desc">${esc(d)}</span>`
+        ).join('');
+        print(grid);
+        printLine('term-dim', 'Tip: use ↑ / ↓ for history, Tab to autocomplete.');
+      },
+
+      ls() {
+        const grid = el('div', 'term-ls');
+        grid.innerHTML = PROJECTS.map(p =>
+          `<span class="term-ls-file">${fileSpan(p.file)}</span>` +
+          `<span class="term-ls-title">${esc(p.title)}</span>`
+        ).join('');
+        print(grid);
+      },
+
+      cat(arg) {
+        if (!arg) { printLine('term-err', 'cat: missing file operand. Try: ls'); return; }
+        const p = byFile.get(arg) || byFile.get(arg.replace(/\.md$/, '') + '.md');
+        if (!p) {
+          printLine('term-err', `cat: ${esc(arg)}: No such file. Try: ls`);
+          return;
+        }
+        const card = el('div', 'term-doc');
+        let html = `<div class="td-head"># ${esc(p.title)}</div>`;
+        html += p.body.map(par => `<p class="td-p">${esc(par)}</p>`).join('');
+        html += '<div class="td-tags">' +
+          p.tags.map(t => `<span class="td-tag">${esc(t)}</span>`).join('') + '</div>';
+        if (p.link) {
+          html += `<a class="td-link" href="${esc(p.link.url)}" target="_blank" rel="noopener">→ ${esc(p.link.label)}</a>`;
+        } else {
+          html += '<div class="td-nolink">// no public link — available on request</div>';
+        }
+        card.innerHTML = html;
+        print(card);
+      },
+
+      open(arg) {
+        if (!arg) { printLine('term-err', 'open: missing file operand.'); return; }
+        const p = byFile.get(arg) || byFile.get(arg.replace(/\.md$/, '') + '.md');
+        if (!p) { printLine('term-err', `open: ${esc(arg)}: No such file.`); return; }
+        if (!p.link) { printLine('term-dim', `${esc(p.file)} has no public link — available on request.`); return; }
+        printLine('', `Opening <span class="term-link">${esc(p.link.url)}</span> …`);
+        window.open(p.link.url, '_blank', 'noopener');
+      },
+
+      tags() {
+        const set = new Set();
+        PROJECTS.forEach(p => p.tags.forEach(t => set.add(t)));
+        const all = Array.from(set).sort((a, b) => a.localeCompare(b));
+        const grid = el('div', 'term-tags');
+        grid.innerHTML = all.map(t => `<span class="term-tag">${esc(t)}</span>`).join('');
+        print(grid);
+        printLine('term-dim', `${all.length} topics across ${PROJECTS.length} projects.`);
+      },
+
+      whoami() {
+        printLine('', 'Caitlin Cisar — Language data scientist and linguist working at the intersection of NLP, ML, and LLMs.');
+        printLine('term-dim', 'NLP · Linguistics · LLM evaluation · Synthetic Data · Star Trek');
+      },
+
+      clear() { output.innerHTML = ''; },
+
+      banner() {
+        const b = el('div', 'term-banner');
+        b.innerHTML =
+          '<pre class="term-art">' +
+          ' ____  ____  ____  ____   __    ____   ___  _   _\n' +
+          '(  _ \\(  __)/ ___)(  __) / _\\  (  _ \\ / __)( )_( )\n' +
+          ' )   / ) _) \\___ \\ ) _) /    \\  )   /( (__  ) _ (\n' +
+          '(__\\_)(____)(____/(____)\\_/\\_/ (__\\_) \\___)(_) (_)' +
+          '</pre>' +
+          '<div class="term-dim">caitlincisar // research &amp; projects // interactive shell</div>';
+        print(b);
+      }
+    };
+
+    const KNOWN = ['help', 'ls', 'cat', 'open', 'tags', 'whoami', 'clear'];
+
+    function run(raw) {
+      const cmd = raw.trim();
+      if (!cmd) return;
+      HISTORY.push(cmd);
+      histIdx = HISTORY.length;
+      echo(cmd);
+      const [name, ...rest] = cmd.split(/\s+/);
+      const arg = rest.join(' ');
+      const fn = COMMANDS[name.toLowerCase()];
+      if (fn && KNOWN.includes(name.toLowerCase())) {
+        fn(arg);
+      } else {
+        printLine('term-err',
+          `command not found: ${esc(name)} — type <span class="term-file" data-cmd="help" role="button" tabindex="0">help</span>`);
+      }
+    }
+
+    // ── Input wiring ───────────────────────────────────────────────
+    function sync() { typed.textContent = input.value; }
+    input.addEventListener('input', sync);
+
+    function autocomplete() {
+      const v = input.value;
+      const parts = v.split(/\s+/);
+      if (parts.length <= 1) {
+        const m = KNOWN.filter(c => c.startsWith(parts[0].toLowerCase()));
+        if (m.length === 1) { input.value = m[0] + ' '; sync(); }
+        else if (m.length > 1) { printLine('term-dim', m.join('   ')); }
+      } else if (['cat', 'open'].includes(parts[0].toLowerCase())) {
+        const frag = parts.slice(1).join(' ').toLowerCase();
+        const m = PROJECTS.map(p => p.file).filter(f => f.startsWith(frag));
+        if (m.length === 1) { input.value = parts[0] + ' ' + m[0]; sync(); }
+        else if (m.length > 1) { printLine('term-dim', m.join('   ')); }
+      }
+    }
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const v = input.value;
+        input.value = ''; sync();
+        run(v);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (histIdx > 0) { histIdx--; input.value = HISTORY[histIdx] || ''; sync(); }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (histIdx < HISTORY.length - 1) { histIdx++; input.value = HISTORY[histIdx] || ''; }
+        else { histIdx = HISTORY.length; input.value = ''; }
+        sync();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        autocomplete();
+      } else if (e.key === 'l' && e.ctrlKey) {
+        e.preventDefault();
+        COMMANDS.clear();
+      }
+    });
+
+    // Focus input when clicking anywhere on the screen (but allow link/file clicks).
+    screen.addEventListener('mousedown', (e) => {
+      if (e.target.closest('a, .term-file')) return;
+      // defer so text selection still works
+      setTimeout(() => input.focus(), 0);
+    });
+
+    // Delegate clicks (and keyboard) on file spans → run their data-cmd.
+    function activateTarget(t) {
+      const node = t.closest('.term-file');
+      if (!node) return false;
+      const cmd = node.getAttribute('data-cmd');
+      if (cmd) { run(cmd); input.focus(); }
+      return true;
+    }
+    output.addEventListener('click', (e) => { if (activateTarget(e.target)) e.preventDefault(); });
+    output.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('term-file')) {
+        e.preventDefault(); activateTarget(e.target);
+      }
+    });
+
+    // Keep cursor state tied to focus.
+    input.addEventListener('focus', () => line.classList.add('focused'));
+    input.addEventListener('blur',  () => line.classList.remove('focused'));
+
+    // ── Boot sequence ──────────────────────────────────────────────
+    applyUser();
+    COMMANDS.banner();
+    printLine('term-dim', "Welcome. Type <span class=\"term-file\" data-cmd=\"help\" role=\"button\" tabindex=\"0\">help</span> to get started, or browse the files below.");
+    printLine('', '');
+    echo('ls');
+    COMMANDS.ls();
+    input.focus();
+  })();
+  </script>
+
+  <script src="shell.js" defer></script>
+
+
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artwork — Caitlin Cisar</title>
+  <meta name="description" content="Film photography by Caitlin Cisar." />
+  <meta name="author" content="Caitlin Cisar" />
+  <meta name="theme-color" content="#060a14" />
+
+  <!-- Social sharing. Base URL is the live custom domain; update it here if the domain changes. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Caitlin Cisar" />
+  <meta property="og:title" content="Artwork — Caitlin Cisar" />
+  <meta property="og:description" content="Film photography by Caitlin Cisar." />
+  <meta property="og:url" content="https://www.caitlincisar.com/artwork.html" />
+  <meta property="og:image" content="https://www.caitlincisar.com/images/Featured/featured-01.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Artwork — Caitlin Cisar" />
+  <meta name="twitter:description" content="Film photography by Caitlin Cisar." />
+  <meta name="twitter:image" content="https://www.caitlincisar.com/images/Featured/featured-01.jpg" />
+
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="stylesheet" href="style.css" />
+  <noscript><style>[data-reveal]{opacity:1 !important;transform:none !important;}</style></noscript>
+</head>
+<body>
+
+  <div class="night-grid" aria-hidden="true"></div>
+
+  <main>
+    <div class="container">
+
+      <!-- Contact sheet: film-stock selector + cinematic frame + filmstrip -->
+      <section class="contact-sheet" id="contactSheet" data-reveal>
+        <div class="filmframe">
+
+          <div class="cs-head">
+            <div class="cs-bar">
+              <div class="cs-title">
+                <span class="cs-kicker">Contact Sheet</span>
+                <h2 class="cs-roll" id="csRoll">—</h2>
+              </div>
+              <div class="cs-stocks" id="stockMenu">
+                <button class="cs-stocks-trigger" id="stockTrigger" type="button"
+                        aria-haspopup="listbox" aria-expanded="false" aria-controls="stockOptions">
+                  Select Film Stock <span class="cs-caret" aria-hidden="true">▾</span>
+                </button>
+                <ul class="cs-stocks-options" id="stockOptions" role="listbox" aria-label="Film stock" hidden></ul>
+              </div>
+            </div>
+
+            <div class="cs-meta" id="csMeta"></div>
+          </div>
+
+          <div class="sprockets" aria-hidden="true"></div>
+          <div class="rebate-print" id="rebate" aria-hidden="true"></div>
+
+          <!-- Fixed-height content shell so grid ⇄ single never resizes -->
+          <div class="cs-content">
+
+          <!-- Contact-sheet grid view (all frames) -->
+          <div class="contact-grid" id="contactGrid" role="list" aria-label="Contact sheet — all frames"></div>
+
+          <!-- Single-frame cinematic viewer -->
+          <div class="gallery-stage" id="stage" role="group" aria-label="Featured photograph">
+            <img id="frameA" class="show" alt="" />
+            <img id="frameB" alt="" />
+
+            <button class="gallery-back" id="backBtn" type="button" aria-label="Back to contact sheet">⊞ Contact sheet</button>
+            <button class="gallery-expand" id="expandBtn" type="button" aria-label="View full size">Expand ⤢</button>
+
+            <button class="gallery-nav prev" id="prevBtn" type="button" aria-label="Previous photo">‹</button>
+            <button class="gallery-nav next" id="nextBtn" type="button" aria-label="Next photo">›</button>
+
+            <div class="gallery-hud">
+              <span class="gallery-frame-no" id="frameNo"></span>
+            </div>
+
+            <div class="shutter" id="shutter" aria-hidden="true"></div>
+          </div>
+
+          </div><!-- /.cs-content -->
+
+          <div class="sprockets" aria-hidden="true"></div>
+        </div>
+
+        <div class="filmstrip" id="filmstrip" role="tablist" aria-label="Photo thumbnails"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer">
+    <div class="lightbox-inner">
+      <button class="lightbox-close" id="lightboxClose">Close ✕</button>
+      <img id="lightboxImg" alt="" />
+    </div>
+  </div>
+
+  <script>
+  // ── CONTACT SHEET / CINEMATIC GALLERY ─────────────────────────────
+  (function() {
+
+    // ── COLLECTIONS ──────────────────────────────────────────────────
+    // Each entry is one collection in the dropdown — a themed set ("Lady
+    // Grey") or a real film stock ("Kodak Gold"), they work the same way:
+    //   folder : a subfolder under images/ where that set's scans live
+    //   frames : the photo filenames in that folder (no captions needed)
+    // Entries with an empty `frames` array are auto-hidden, so you can
+    // pre-stub a collection and fill it in later. The dropdown sorts them
+    // alphabetically, and every roll deals its contact sheet in a fresh
+    // random order on each visit. Cosmetic fields: `grease` is the "select"
+    // circle on the active frame, and `iso`/`code`/`format` print in the
+    // meta + rebate row (use friendly values for non-film sets).
+    //
+    // Scans are named uniformly by tools/rename-images.sh as
+    // <slug>-NN.<ext>, so `frames` is just seq(slug, count): e.g.
+    // seq('kodak-gold', 20) -> kodak-gold-01.jpg … kodak-gold-20.jpg.
+    // Pass a third arg for a non-jpg extension, or spread two calls when a
+    // roll mixes formats.
+    const seq = (slug, count, ext = 'jpg') =>
+      Array.from({ length: count }, (_, i) =>
+        `${slug}-${String(i + 1).padStart(2, '0')}.${ext}`);
+
+    const STOCKS = [
+
+      // ── THEMED COLLECTIONS ───────────────────────────────────────────
+      {
+        // A curated mix — copy favorites from any roll into images/Featured.
+        name: 'Featured', iso: '—', code: 'FEATURED', format: 'mixed',
+        grease: '#ff3b5c', folder: 'images/Featured',
+        frames: seq('featured', 15),
+      },
+      {
+        name: 'Black & White', iso: '—', code: 'B&W', format: '35mm',
+        grease: '#ff3b5c', folder: 'images/Black & White',
+        frames: seq('black-white', 14),
+      },
+      {
+        name: 'Multiple Exposures', iso: '—', code: 'MULTI EXP', format: '35mm',
+        grease: '#ffd23b', folder: 'images/Multiple Exposures',
+        frames: seq('multiple-exposures', 7),
+      },
+
+      // ── FILM STOCKS ──────────────────────────────────────────────────
+      {
+        name: 'Kodak Gold', iso: 200, code: 'GA 135', format: '35mm',
+        grease: '#ff3b5c', folder: 'images/Kodak Gold',
+        frames: seq('kodak-gold', 15),
+      },
+      {
+        name: 'Kodak Portra', iso: 400, code: 'PR 135', format: '35mm',
+        grease: '#ff3b5c', folder: 'images/Kodak Portra',
+        frames: seq('kodak-portra', 15),
+      },
+      {
+        name: 'LomoChrome', iso: '—', code: 'LOMO', format: '35mm',
+        grease: '#ffd23b', folder: 'images/LomoChrome',
+        frames: seq('lomochrome', 7),
+      },
+
+      // ── ADD YOUR OTHER ROLLS BELOW ───────────────────────────────────
+      // 1. Make a folder under images/ (the `folder` value).
+      // 2. Drop your scans in it.
+      // 3. Add the filenames to `frames`.
+      // The roll then appears in the dropdown automatically.
+      {
+        name: 'CineStill 800T', iso: 800, code: '800T', format: '35mm',
+        grease: '#ff3b5c', folder: 'images/CineStill',
+        frames: [],
+      },
+      {
+        name: 'Ilford HP5', iso: 400, code: 'HP5+', format: '35mm',
+        grease: '#ff3b5c', folder: 'images/Ilford HP5',
+        frames: [],
+      },
+    ];
+
+    const SHUFFLE = { name: 'Shuffle All', iso: '—', code: 'MIX', format: '35mm', grease: '#ff3b5c' };
+
+    // ── refs ──
+    const stripEl   = document.getElementById('filmstrip');
+    const frameNoEl = document.getElementById('frameNo');
+    const layerA    = document.getElementById('frameA');
+    const layerB    = document.getElementById('frameB');
+    const prevBtn   = document.getElementById('prevBtn');
+    const nextBtn   = document.getElementById('nextBtn');
+    const expandBtn = document.getElementById('expandBtn');
+    const backBtn   = document.getElementById('backBtn');
+    const menuEl    = document.getElementById('stockMenu');
+    const triggerEl = document.getElementById('stockTrigger');
+    const optionsEl = document.getElementById('stockOptions');
+    const sheetEl   = document.getElementById('contactSheet');
+    const rollEl    = document.getElementById('csRoll');
+    const metaEl    = document.getElementById('csMeta');
+    const rebateEl  = document.getElementById('rebate');
+    const gridEl    = document.getElementById('contactGrid');
+    const shutterEl = document.getElementById('shutter');
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const pad = n => String(n).padStart(2, '0');
+
+    let activeLayer = layerA;
+    let activeStock = null;
+    let frames  = [];
+    let total   = 0;
+    let current = 0;
+    let thumbs  = [];
+
+    // only rolls that actually have photos — Featured pinned first (it's the
+    // landing set for the page), the rest listed alphabetically
+    const available = STOCKS.filter(s => s.frames && s.frames.length)
+      .sort((a, b) => {
+        if (a.name === 'Featured') return -1;
+        if (b.name === 'Featured') return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+    const srcFor = (stock, file) => stock.folder.replace(/\/+$/, '') + '/' + file;
+    const expand = stock => stock.frames.map(file => ({ src: srcFor(stock, file), stock }));
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // ── populate film-stock dropdown ──
+    const stockOpts = [];
+    function addStockOption(value, label) {
+      const li = document.createElement('li');
+      li.className = 'cs-stock-opt';
+      li.dataset.value = value;
+      li.textContent = label;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      li.addEventListener('click', () => { loadStock(value); closeMenu(); });
+      optionsEl.appendChild(li);
+      stockOpts.push(li);
+    }
+    available.forEach((s, i) => addStockOption(String(i), s.name));
+    if (available.length > 1) addStockOption('shuffle', '⤮ ' + SHUFFLE.name);
+
+    function setActiveTab(value) {
+      stockOpts.forEach(o =>
+        o.setAttribute('aria-selected', o.dataset.value === value ? 'true' : 'false'));
+    }
+
+    // ── dropdown open/close ──
+    function openMenu()  { optionsEl.hidden = false; menuEl.classList.add('open');  triggerEl.setAttribute('aria-expanded', 'true'); }
+    function closeMenu() { optionsEl.hidden = true;  menuEl.classList.remove('open'); triggerEl.setAttribute('aria-expanded', 'false'); }
+    triggerEl.addEventListener('click', () => { optionsEl.hidden ? openMenu() : closeMenu(); });
+    document.addEventListener('click', e => { if (!menuEl.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+
+    function loadStock(value) {
+      setActiveTab(value);
+      if (value === 'shuffle') {
+        let all = [];
+        available
+          .filter(s => !s.shuffleExclude)
+          .forEach(s => { all = all.concat(expand(s)); });
+        frames = shuffle(all);
+        activeStock = SHUFFLE;
+      } else {
+        const s = available[+value] || available[0];
+        frames = shuffle(expand(s));   // each roll deals in a fresh order
+        activeStock = s;
+      }
+      total = frames.length;
+      applyChrome();
+      buildThumbs();
+      buildGrid();
+      current = 0;
+      show(0, true);
+      enterGrid();          // every roll opens to its contact sheet
+    }
+
+    function applyChrome() {
+      sheetEl.style.setProperty('--grease', activeStock.grease || '#ff3b5c');
+      rollEl.textContent = activeStock.name;
+      metaEl.innerHTML =
+        '<span>ISO <b>' + activeStock.iso + '</b></span>' +
+        '<span>' + activeStock.code + '</span>' +
+        '<span><b>' + total + '</b> frames</span>' +
+        '<span>' + activeStock.format + '</span>';
+    }
+
+    function buildThumbs() {
+      stripEl.innerHTML = '';
+      thumbs = frames.map((f, i) => {
+        const t = document.createElement('button');
+        t.type = 'button';
+        t.className = 'filmstrip-thumb';
+        t.setAttribute('role', 'tab');
+        t.setAttribute('aria-label', 'Frame ' + (i + 1));
+        const img = document.createElement('img');
+        img.src = f.src; img.alt = 'Frame ' + (i + 1); img.loading = 'lazy';
+        const no = document.createElement('span');
+        no.className = 'fs-no'; no.textContent = pad(i + 1);
+        const mark = document.createElement('span');
+        mark.className = 'fs-mark'; mark.setAttribute('aria-hidden', 'true');
+        t.append(img, no, mark);
+        t.addEventListener('click', () => enterSingle(i));
+        stripEl.appendChild(t);
+        return t;
+      });
+    }
+
+    // Build the contact-sheet grid (all frames at once)
+    function buildGrid() {
+      gridEl.innerHTML = '';
+      frames.forEach((f, i) => {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cg-cell';
+        cell.setAttribute('role', 'listitem');
+        cell.setAttribute('aria-label', 'Open frame ' + (i + 1));
+        const img = document.createElement('img');
+        img.src = f.src; img.alt = 'Frame ' + (i + 1); img.loading = 'lazy';
+        const no = document.createElement('span');
+        no.className = 'cg-no'; no.textContent = pad(i + 1);
+        const mark = document.createElement('span');
+        mark.className = 'cg-mark'; mark.setAttribute('aria-hidden', 'true');
+        cell.append(img, no, mark);
+        cell.addEventListener('click', () => enterSingle(i));
+        gridEl.appendChild(cell);
+      });
+    }
+
+    // ── View switching: contact sheet ⇄ single frame ──
+    function enterGrid() {
+      sheetEl.classList.add('mode-grid');
+      sheetEl.classList.remove('mode-single');
+    }
+    function enterSingle(i) {
+      sheetEl.classList.add('mode-single');
+      sheetEl.classList.remove('mode-grid');
+      navigate(i, true);
+    }
+
+    // ── Camera shutter: blink the frame closed, swap, reopen ──
+    let shutterTimer = null;
+    function fireShutter(midCb) {
+      if (reduceMotion) { if (midCb) midCb(); return; }
+      shutterEl.classList.remove('firing');
+      void shutterEl.offsetWidth;              // restart the animation
+      shutterEl.classList.add('firing');
+      setTimeout(() => { if (midCb) midCb(); }, 130);   // swap while closed
+      clearTimeout(shutterTimer);
+      shutterTimer = setTimeout(() => shutterEl.classList.remove('firing'), 360);
+    }
+    // Navigate with the shutter effect; `force` reshoots even if same index
+    function navigate(i, force) {
+      i = (i + total) % total;
+      if (!force && i === current) return;
+      fireShutter(() => show(i));
+    }
+
+    // Kodak-style edge printing: roll code + frame ticks around current
+    function rebate() {
+      let ticks = '';
+      for (let d = -2; d <= 2; d++) {
+        const i = current + d;
+        if (i < 0 || i >= total) continue;
+        const n = pad(i + 1);
+        ticks += (i === current)
+          ? '<span class="rb-cur">&#10098;' + n + '&#10099;</span> '
+          : '<span class="rb-mark">&#9656;' + n + '</span> ';
+      }
+      rebateEl.innerHTML =
+        '<span class="rb-roll">' + activeStock.code + '</span> ' + ticks +
+        '<span class="rb-mark">&#8614;&#8614;</span>';
+    }
+
+    function show(i, skipScroll) {
+      if (!total) return;
+      i = (i + total) % total;
+      current = i;
+      const f = frames[i];
+
+      const incoming = (activeLayer === layerA) ? layerB : layerA;
+      const outgoing = activeLayer;
+      // idempotent swap: capture `outgoing` so a cached image firing both
+      // the .complete branch and onload can't hide the layer it just showed
+      const reveal = () => {
+        incoming.classList.add('show');
+        if (outgoing !== incoming) outgoing.classList.remove('show');
+        activeLayer = incoming;
+      };
+      incoming.onload = reveal;
+      incoming.onerror = reveal;
+      incoming.alt = 'Frame ' + pad(i + 1);
+      incoming.src = f.src;
+      if (incoming.complete) reveal();
+
+      frameNoEl.innerHTML = '<b>' + pad(i + 1) + '</b> / ' + pad(total);
+      rebate();
+
+      thumbs.forEach((t, ti) => t.classList.toggle('active', ti === i));
+      if (!skipScroll && thumbs[i]) {
+        thumbs[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+
+    prevBtn.addEventListener('click', () => navigate(current - 1));
+    nextBtn.addEventListener('click', () => navigate(current + 1));
+    backBtn.addEventListener('click', enterGrid);
+
+    // ── Lightbox ──
+    const lightbox    = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const closeBtn    = document.getElementById('lightboxClose');
+
+    function openLightbox() {
+      if (!total) return;
+      lightboxImg.src = frames[current].src;
+      lightboxImg.alt = 'Frame ' + pad(current + 1);
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      lightboxImg.src = '';
+      document.body.style.overflow = '';
+    }
+    expandBtn.addEventListener('click', openLightbox);
+    document.getElementById('stage').addEventListener('click', e => {
+      // ignore clicks on the controls
+      if (e.target.closest('button')) return;
+      openLightbox();
+    });
+    closeBtn.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
+
+    // ── Keyboard ──
+    document.addEventListener('keydown', e => {
+      if (lightbox.classList.contains('active')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft')  { show(current - 1); lightboxImg.src = frames[current].src; }
+        if (e.key === 'ArrowRight') { show(current + 1); lightboxImg.src = frames[current].src; }
+        return;
+      }
+      // Arrows + Escape only act in the single-frame view
+      if (!sheetEl.classList.contains('mode-single')) return;
+      if (e.key === 'ArrowLeft')  navigate(current - 1);
+      if (e.key === 'ArrowRight') navigate(current + 1);
+      if (e.key === 'Escape')     enterGrid();
+    });
+
+    // ── Init ── open on Featured if present, else the first roll
+    if (available.length) {
+      const startIdx = available.findIndex(s => s.name === 'Featured');
+      loadStock(String(startIdx >= 0 ? startIdx : 0));
+    } else {
+      rollEl.textContent = 'No rolls yet';
+    }
+  })();
+  </script>
+
+  <script src="shell.js" defer></script>
+
+</body>
+</html>
