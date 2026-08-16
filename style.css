@@ -1264,6 +1264,7 @@ body.modal-open { overflow: hidden; }
 }
 
 /* Live input line */
+.term-form { display: contents; }
 .term-inputline {
   display: flex;
   align-items: baseline;

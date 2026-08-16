@@ -20,6 +20,7 @@
   <meta name="twitter:description" content="Research and projects by Caitlin Cisar — linguistics, NLP, LLMs, and data science." />
   <meta name="twitter:image" content="https://www.caitlincisar.com/images/polaroid-1.jpg" />
 
+  <link rel="canonical" href="https://www.caitlincisar.com/research.html" />
   <link rel="icon" href="favicon.png" type="image/png" />
   <link rel="stylesheet" href="style.css" />
   <noscript><style>[data-reveal]{opacity:1 !important;transform:none !important;}</style></noscript>
@@ -42,11 +43,13 @@
         <div class="term-screen" id="termScreen">
           <div class="term-output" id="termOutput" role="log" aria-live="polite"></div>
 
-          <label class="term-inputline" for="termInput" id="termInputLine">
-            <span class="term-prompt" aria-hidden="true"><span class="tp-user">visitor</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">:~$</span></span>
-            <span class="term-typed" id="termTyped"></span><span class="term-cursor" id="termCursor" aria-hidden="true"></span>
-            <input id="termInput" class="term-input" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Terminal command input" />
-          </label>
+          <form class="term-form" id="termForm" autocomplete="off" novalidate>
+            <label class="term-inputline" for="termInput" id="termInputLine">
+              <span class="term-prompt" aria-hidden="true"><span class="tp-user">visitor</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">:~$</span></span>
+              <span class="term-typed" id="termTyped"></span><span class="term-cursor" id="termCursor" aria-hidden="true"></span>
+              <input id="termInput" class="term-input" type="text" enterkeyhint="go" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Terminal command input" />
+            </label>
+          </form>
         </div>
       </section>
 
@@ -61,6 +64,7 @@
     const input   = document.getElementById('termInput');
     const typed   = document.getElementById('termTyped');
     const line    = document.getElementById('termInputLine');
+    const form    = document.getElementById('termForm');
     if (!screen || !input) return;
 
     // ── Visitor handle (set via the Purrsona widget) ───────────────
@@ -81,6 +85,15 @@
 
     // ── Project "files" ────────────────────────────────────────────
     const PROJECTS = [
+      {
+        file: 'lcci.md',
+        title: 'LCCI: Long Context & Complex Interaction Benchmark',
+        body: [
+          'What\'s In A Benchmark? Rethinking "Thinking" in Long Context Conversations. When a frontier model fails in the real world, it rarely fails on a single-turn prompt with a well-defined intent. It fails midway through a long conversation, forgetting an instruction from three turns ago, or answering from memory when the document is right there. Innodata\’s Long Context & Complex Interaction (LCCI) Benchmark is a structured evaluation dataset built to surface those specific failure modes, containing hundreds of hand-authored multi-turn conversations, multi-modal attachments, and a multi-judge panel grading every response against a rubric written for that exact case. Preliminary results on three frontier models show thinking-token spend is the strongest negative predictor of whether a conversation passes, and a signal pointing to task difficulty, rather than capability.'
+        ],
+        tags: ['LLM Evaluation', 'Benchmarking', 'Long Context', 'Multimodal', 'Multi-Turn Dialogue', 'NLP'],
+        link: { label: 'Read on Innodata', url: 'https://innodata.com/long-context-llm-benchmark/' }
+      },
       {
         file: 'pilot.md',
         title: 'PILOT: Steering Synthetic Data Generation with Psychological & Linguistic Output Targeting',
@@ -270,6 +283,25 @@
     function sync() { typed.textContent = input.value; }
     input.addEventListener('input', sync);
 
+    // Submit the current line and reset. Used by both the desktop
+    // Enter keydown and the mobile keyboard's Go/Return (form submit).
+    function submitLine() {
+      const v = input.value;
+      input.value = ''; sync();
+      run(v);
+    }
+
+    // On mobile, virtual keyboards (esp. Android/Gboard) often don't fire a
+    // reliable Enter keydown for a bare input, but the Go/Return key still
+    // submits the surrounding form — so this is what makes Enter work on phones.
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitLine();
+        input.focus();
+      });
+    }
+
     function autocomplete() {
       const v = input.value;
       const parts = v.split(/\s+/);
@@ -288,9 +320,7 @@
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        const v = input.value;
-        input.value = ''; sync();
-        run(v);
+        submitLine();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if (histIdx > 0) { histIdx--; input.value = HISTORY[histIdx] || ''; sync(); }
