@@ -1,6 +1,6 @@
 # Caitlin Cisar's Personal Website
 
-The personal website and portfolio of Caitlin Cisar, a language data scientist
+The personal website and portfolio of Caitlin Cisar, an AI language engineer
 working at the intersection of NLP, ML, and LLMs.
 
 ## Pages
@@ -11,8 +11,8 @@ working at the intersection of NLP, ML, and LLMs.
 | `research.html`  | Interactive terminal listing research & projects                    |
 | `artwork.html`   | Film-photography gallery (contact sheet + single-frame viewer)      |
 
-`shell.js` is the shared shell: it injects the nav, footer, Contact modal, and
-the Purrsona name-generator into every page.
+`shell.js` is the shared shell: it injects the nav, footer, and the Contact,
+Purrsona name-generator, and Off Duty modals into every page.
 
 ## Local Preview
 

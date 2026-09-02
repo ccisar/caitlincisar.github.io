@@ -104,8 +104,8 @@
   (function() {
 
     // ── COLLECTIONS ──────────────────────────────────────────────────
-    // Each entry is one collection in the dropdown — a themed set ("Lady
-    // Grey") or a real film stock ("Kodak Gold"), they work the same way:
+    // Each entry is one collection in the dropdown, either a themed set ("Lady
+    // Grey") or a real film stock ("Kodak Gold"). They work the same way:
     //   folder : a subfolder under images/ where that set's scans live
     //   frames : the photo filenames in that folder (no captions needed)
     // Entries with an empty `frames` array are auto-hidden, so you can
@@ -128,7 +128,7 @@
 
       // ── THEMED COLLECTIONS ───────────────────────────────────────────
       {
-        // A curated mix — copy favorites from any roll into images/Featured.
+        // A curated mix. Copy favorites from any roll into images/Featured.
         name: 'Featured', iso: '—', code: 'FEATURED', format: 'mixed',
         grease: '#ff3b5c', folder: 'images/Featured',
         frames: seq('featured', 15),
@@ -210,7 +210,7 @@
     let current = 0;
     let thumbs  = [];
 
-    // only rolls that actually have photos — Featured pinned first (it's the
+    // only rolls that actually have photos. Featured pinned first (it's the
     // landing set for the page), the rest listed alphabetically
     const available = STOCKS.filter(s => s.frames && s.frames.length)
       .sort((a, b) => {

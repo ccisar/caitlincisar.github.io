@@ -37,10 +37,36 @@
             <i class="td td-r"></i><i class="td td-y"></i><i class="td td-g"></i>
           </span>
           <span class="term-title">visitor@caitlincisar — research — zsh</span>
-          <span class="term-meta" id="termMeta">4 files</span>
+          <div class="view-toggle" id="viewToggle" role="group" aria-label="Switch view">
+            <button type="button" class="vt-btn" data-view="terminal" title="Terminal view" aria-label="Terminal view">&gt;_</button>
+            <button type="button" class="vt-btn" data-view="gui" title="Browse view" aria-label="Browse view">▤</button>
+          </div>
+          <button type="button" class="vt-reset" id="viewReset" title="Back to the chooser" aria-label="Back to the view chooser">↺</button>
+          <span class="term-meta" id="termMeta">4 dirs · 7 files</span>
         </div>
 
-        <div class="term-screen" id="termScreen">
+        <!-- First-visit chooser: remembers the pick, but the toggle above can always switch it later -->
+        <div class="view-chooser" id="viewChooser" hidden>
+          <div class="vc-inner">
+            <p class="vc-eyebrow">// choose your interface</p>
+            <h2 class="vc-title">How do you want to look around?</h2>
+            <div class="vc-options">
+              <button type="button" class="vc-opt" data-choose="terminal">
+                <span class="vc-opt-icon" aria-hidden="true">&gt;_</span>
+                <span class="vc-opt-label">Terminal</span>
+                <span class="vc-opt-desc">Type commands like <code>ls</code>, <code>cd</code>, and <code>cat</code> to explore the files.</span>
+              </button>
+              <button type="button" class="vc-opt" data-choose="gui">
+                <span class="vc-opt-icon" aria-hidden="true">▤</span>
+                <span class="vc-opt-label">GUI</span>
+                <span class="vc-opt-desc">A plain card view to click around. </span>
+              </button>
+            </div>
+            <p class="vc-hint">You can switch views with the toggle in the corner above.</p>
+          </div>
+        </div>
+
+        <div class="term-screen" id="termScreen" hidden>
           <div class="term-output" id="termOutput" role="log" aria-live="polite"></div>
 
           <form class="term-form" id="termForm" autocomplete="off" novalidate>
@@ -51,7 +77,45 @@
             </label>
           </form>
         </div>
+
+        <div class="proj-browse" id="projBrowse" hidden></div>
       </section>
+
+      <!-- Plain-text fallback for JS-off / crawlers -->
+      <noscript>
+        <div class="proj-browse-noscript">
+          <h2>Research</h2>
+          <ul>
+            <li><strong>LCCI: Long Context &amp; Complex Interaction Benchmark</strong> — <a href="https://innodata.com/long-context-llm-benchmark/">Read on Innodata</a></li>
+            <li><strong>PILOT: Steering Synthetic Data Generation with Psychological &amp; Linguistic Output Targeting</strong> — <a href="https://arxiv.org/abs/2509.15447">Read on arXiv</a></li>
+          </ul>
+          <h2>Personal</h2>
+          <ul>
+            <li><strong>Purrsona Generator</strong> — <a href="https://ccisar.github.io/purrsona-generator/">Visit project</a></li>
+          </ul>
+          <h2>Photography</h2>
+          <ul>
+            <li><strong>Featured: Film in the Florida Keys</strong> — <a href="https://shootitwithfilm.com/film-in-the-florida-keys-by-caitlin-cisar/">Read on Shoot It With Film</a></li>
+          </ul>
+          <h2>Upcoming</h2>
+          <ul>
+            <li>Classify Me If You Can (in progress)</li>
+            <li>digi.arcade (in progress)</li>
+            <li>LIWC-I-Am-Your-Agent (in progress)</li>
+          </ul>
+        </div>
+      </noscript>
+
+      <div class="modal-overlay" id="modal-project" hidden>
+        <div class="modal-panel modal-panel-wide" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+          <div class="modal-bar">
+            <span class="modal-bar-code" id="projectModalCode">LCARS &middot; PROJ</span>
+            <h2 class="modal-title" id="projectModalTitle">Project</h2>
+            <button type="button" class="modal-close" data-close aria-label="Close">&times;</button>
+          </div>
+          <div class="modal-body" id="projectModalBody"></div>
+        </div>
+      </div>
 
     </div>
   </main>
@@ -72,70 +136,119 @@
       try { return localStorage.getItem('purrsona-user') || 'visitor'; }
       catch (e) { return 'visitor'; }
     })();
-    function applyUser() {
+
+    // ── Current directory (one level deep: root, or a category dir) ─
+    let cwd = null;
+
+    function promptPathText() { return cwd ? ':~/' + cwd + '$' : ':~$'; }
+
+    function updatePromptLine() {
       const u = line.querySelector('.tp-user');
       if (u) u.textContent = USER;
+      const p = line.querySelector('.tp-path');
+      if (p) p.textContent = promptPathText();
       const title = document.querySelector('.term-title');
       if (title) title.textContent = USER + '@caitlincisar — research — zsh';
     }
     window.addEventListener('purrsona-user-set', (e) => {
-      USER = e.detail || USER;
-      applyUser();
+      USER = (e.detail && e.detail.slug) || 'visitor';
+      updatePromptLine();
     });
+
+    // ── Category "directories" ──────────────────────────────────────
+    const CATEGORIES = [
+      { dir: 'research',     chip: 'Research' },
+      { dir: 'personal',     chip: 'Personal' },
+      { dir: 'photography',  chip: 'Photography' },
+      { dir: 'upcoming',     chip: 'Upcoming' }
+    ];
 
     // ── Project "files" ────────────────────────────────────────────
     const PROJECTS = [
       {
         file: 'lcci.md',
+        dir: 'research',
         title: 'LCCI: Long Context & Complex Interaction Benchmark',
         body: [
-          'What\'s In A Benchmark? Rethinking "Thinking" in Long Context Conversations. When a frontier model fails in the real world, it rarely fails on a single-turn prompt with a well-defined intent. It fails midway through a long conversation, forgetting an instruction from three turns ago, or answering from memory when the document is right there. Innodata\’s Long Context & Complex Interaction (LCCI) Benchmark is a structured evaluation dataset built to surface those specific failure modes, containing hundreds of hand-authored multi-turn conversations, multi-modal attachments, and a multi-judge panel grading every response against a rubric written for that exact case. Preliminary results on three frontier models show thinking-token spend is the strongest negative predictor of whether a conversation passes, and a signal pointing to task difficulty, rather than capability.'
+          'What’s In A Benchmark? Rethinking "Thinking" in Long Context Conversations. When a frontier model fails in the real world, it rarely fails on a single-turn prompt with a well-defined intent. It fails midway through a long conversation, forgetting an instruction from three turns ago, or answering from memory when the document is right there. Innodata’s Long Context & Complex Interaction (LCCI) Benchmark is a structured evaluation dataset built to surface those specific failure modes, containing hundreds of hand-authored multi-turn conversations, multi-modal attachments, and a multi-judge panel grading every response against a rubric written for that exact case. Preliminary results on three frontier models show thinking-token spend is the strongest negative predictor of whether a conversation passes, and a signal pointing to task difficulty, rather than capability.'
         ],
         tags: ['LLM Evaluation', 'Benchmarking', 'Long Context', 'Multimodal', 'Multi-Turn Dialogue', 'NLP'],
-        link: { label: 'Read on Innodata', url: 'https://innodata.com/long-context-llm-benchmark/' }
+        link: { label: 'Read on Innodata', url: 'https://innodata.com/long-context-llm-benchmark/' },
+        status: 'published'
       },
       {
         file: 'pilot.md',
+        dir: 'research',
         title: 'PILOT: Steering Synthetic Data Generation with Psychological & Linguistic Output Targeting',
         body: [
-          'Generative AI applications commonly use natural language personas to steer synthetic data generation, but this forces models to make unintended inferences about which attributes to emphasize — limiting precise control. PILOT (Psychological and Linguistic Output Targeting) is a two-phase framework that addresses this by translating natural language persona descriptions into structured psycholinguistic profiles, then using those profiles to guide LLM generation along measurable axes of variation.',
-          'Evaluated across three state-of-the-art LLMs (Mistral Large 2, DeepSeek-R1, LLaMA 3.3 70B) using 25 synthetic personas under three conditions — Natural-language Persona Steering (NPS), Schema-Based Steering (SBS), and Hybrid Persona-Schema Steering (HPS) — results show schema-based approaches significantly reduce artificial-sounding repetition while improving coherence: silhouette scores rose from 0.098 to 0.237 and topic purity from 0.773 to 0.957. HPS balances the trade-offs between lexical diversity and structural consistency, and expert linguistic evaluation confirms high response quality across all conditions.'
+          'Generative AI applications commonly use natural language personas to steer synthetic data generation, but this forces models to make unintended inferences about which attributes to emphasize, limiting precise control. PILOT (Psychological and Linguistic Output Targeting) is a two-phase framework that addresses this by translating natural language persona descriptions into structured psycholinguistic profiles, then using those profiles to guide LLM generation along measurable axes of variation.',
+          'Evaluated across three state-of-the-art LLMs (Mistral Large 2, DeepSeek-R1, LLaMA 3.3 70B) using 25 synthetic personas under three conditions (Natural-language Persona Steering (NPS), Schema-Based Steering (SBS), and Hybrid Persona-Schema Steering (HPS)), results show schema-based approaches significantly reduce artificial-sounding repetition while improving coherence: silhouette scores rose from 0.098 to 0.237 and topic purity from 0.773 to 0.957. HPS balances the trade-offs between lexical diversity and structural consistency, and expert linguistic evaluation confirms high response quality across all conditions.'
         ],
         tags: ['Synthetic Data', 'LLMs', 'Psycholinguistics', 'Data Quality', 'NLP'],
-        link: { label: 'Read on arXiv', url: 'https://arxiv.org/abs/2509.15447' }
-      },
-      {
-        file: 'digi-arcade.md',
-        title: 'digi.arcade: A Mini Arcade of Digital Tools & Oddities',
-        body: [
-          'A mini "arcade" where you can find tiny tools and digital oddities. "Digis" are lightweight, functional web pages built with just HTML, CSS, and JavaScript. The arcade features a variety of unproductivity tools and utilities to help with niche, probably unlikely, needs; like a banner of moving topics that can explode upon being clicked but eventually regenerate. (Very practical!) However, among the chaos, sometimes true usefulness converges. For example, digi.regex is a sandbox for testing regular expressions that comes with practice exercises. See all the practicality?'
-        ],
-        tags: ['Web', 'JavaScript', 'Creative Coding', 'Experiments'],
-        link: null
+        link: { label: 'Read on arXiv', url: 'https://arxiv.org/abs/2509.15447' },
+        status: 'published'
       },
       {
         file: 'purrsona-generator.md',
+        dir: 'personal',
         title: 'Purrsona Generator: A Mini Linguistics-Based Cat Name Generator',
         body: [
-          'A mini linguistics-based tool that generates cat names using phonaesthetics, morphological templates, and a few other controllable parameters. Built in pure JS, hosted on GitHub Pages.'
+          'A mini linguistics-based tool that generates non-boring cat names using phonaesthetics, morphological templates, and a few other controllable parameters. Examples: Homie Zodiacnoodle and Captain Cottagecheesebun.'
         ],
         tags: ['Linguistics', 'Phonology', 'JavaScript', 'GitHub Pages'],
-        link: { label: 'Visit project', url: 'https://ccisar.github.io/purrsona-generator/' }
+        link: { label: 'Visit project', url: 'https://ccisar.github.io/purrsona-generator/' },
+        status: 'published'
+      },
+      {
+        file: 'film-in-the-florida-keys.md',
+        dir: 'photography',
+        title: 'Featured: Film in the Florida Keys',
+        body: [
+          'A set of my film photographs from the Florida Keys was featured on Shoot It With Film, a blog dedicated to the film photography community.'
+        ],
+        tags: ['Photography', 'Film', 'Feature'],
+        link: { label: 'Read on Shoot It With Film', url: 'https://shootitwithfilm.com/film-in-the-florida-keys-by-caitlin-cisar/' },
+        status: 'published'
       },
       {
         file: 'llm-speak-classifier.md',
+        dir: 'upcoming',
         title: 'Classify Me If You Can: A Naive Bayes Classifier to Detect "LLM Speak"',
         body: [
           'Can a simple Naive Bayes classifier reliably detect LLM-generated text based on characteristic lexical patterns like hedging, overused discourse markers, and formulaic structures? This project investigates the linguistic fingerprints of generated text.'
         ],
         tags: ['Machine Learning', 'NLP', 'LLMs', 'Classification', 'Python'],
-        link: null
+        link: null,
+        status: 'wip'
+      },
+      {
+        file: 'digi-arcade.md',
+        dir: 'upcoming',
+        title: 'digi.arcade: A Mini Arcade of Digital Tools & Oddities',
+        body: [
+          'A mini "arcade" where you can find tiny tools and digital oddities. "Digis" are lightweight, functional web pages built with just HTML, CSS, and JavaScript. The arcade features a variety of unproductivity tools and utilities to help with niche, probably unlikely, needs; like a banner of moving topics that can explode upon being clicked but eventually regenerate. (Very practical!) However, among the chaos, sometimes true usefulness converges. For example, digi.regex is a sandbox for testing regular expressions that comes with practice exercises. See all the practicality?'
+        ],
+        tags: ['Web', 'JavaScript', 'Creative Coding', 'Experiments'],
+        link: null,
+        status: 'wip'
+      },
+      {
+        file: 'liwc-i-am-your-agent.md',
+        dir: 'upcoming',
+        title: 'LIWC-I-Am-Your-Agent',
+        body: [
+          'LIWC-I-Am-Your-Agent (LAYA) is a tool that helps construct grounded representations of how someone talks. Rather than telling a language model to imagine what a "data scientist" sounds like, LAYA builds a reusable psycholinguistic profile directly from a person’s own writing samples. Note: LIWC is pronounced “Luke.” Yes, that’s the joke. A Star Wars reference. The author remains, for the record, a hardcore Trekkie.'
+        ],
+        tags: ['Psycholinguistics', 'LIWC', 'Persona Modeling', 'NLP', 'Synthetic Data'],
+        link: null,
+        status: 'soon'
       }
     ];
 
     const byFile = new Map(PROJECTS.map(p => [p.file, p]));
+    const byDir  = (d) => PROJECTS.filter(p => p.dir === d);
     const termMeta = document.getElementById('termMeta');
-    if (termMeta) termMeta.textContent = PROJECTS.length + ' files';
+    if (termMeta) termMeta.textContent = CATEGORIES.length + ' dirs · ' + PROJECTS.length + ' files';
     const HISTORY = [];
     let histIdx = -1;
 
@@ -160,26 +273,43 @@
     function fileSpan(file) {
       return `<span class="term-file" data-cmd="cat ${esc(file)}" role="button" tabindex="0">${esc(file)}</span>`;
     }
+    function dirSpan(dir) {
+      return `<span class="term-file term-dir" data-cmd="cd ${esc(dir)}" role="button" tabindex="0">${esc(dir)}/</span>`;
+    }
 
     // ── Command echo ───────────────────────────────────────────────
     function echo(cmd) {
       const row = el('div', 'term-line term-echo');
       row.innerHTML =
-        `<span class="term-prompt"><span class="tp-user">${esc(USER)}</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">:~$</span></span> ` +
+        `<span class="term-prompt"><span class="tp-user">${esc(USER)}</span>@<span class="tp-host">caitlincisar</span><span class="tp-path">${esc(promptPathText())}</span></span> ` +
         `<span class="term-echo-cmd">${esc(cmd)}</span>`;
       print(row);
+    }
+
+    // ── File resolution (accepts "file.md", "file", or "dir/file.md") ─
+    function resolveFile(raw) {
+      if (!raw) return null;
+      let a = raw.trim();
+      if (a.includes('/')) a = a.split('/').pop();
+      if (!a) return null;
+      if (!a.endsWith('.md')) a += '.md';
+      return byFile.get(a) || null;
     }
 
     // ── Commands ───────────────────────────────────────────────────
     const COMMANDS = {
       help() {
         const rows = [
-          ['ls',            'list all project files'],
+          ['ls [dir]',      'list directories, or files inside one'],
+          ['cd <dir>',      'move into a category (cd .. to go back)'],
+          ['tree',          'show the whole file tree at once'],
           ['cat <file>',    'read a project (or click any file)'],
           ['open <file>',   'open a project’s external link'],
+          ['pwd',           'print the current directory'],
           ['tags',          'list every research topic'],
           ['whoami',        'about the author'],
           ['clear',         'clear the screen'],
+          ['reset',         'back to the terminal/browse chooser'],
           ['help',          'show this list']
         ];
         const grid = el('div', 'term-help');
@@ -190,18 +320,65 @@
         printLine('term-dim', 'Tip: use ↑ / ↓ for history, Tab to autocomplete.');
       },
 
-      ls() {
+      ls(arg) {
+        const target = (arg || '').trim().replace(/\/$/, '') || cwd;
+        if (!target) {
+          const grid = el('div', 'term-dirs');
+          grid.innerHTML = CATEGORIES.map(c => {
+            const count = byDir(c.dir).length;
+            return `<span class="term-ls-file">${dirSpan(c.dir)}</span>` +
+                   `<span class="term-ls-title">${count} file${count === 1 ? '' : 's'}</span>`;
+          }).join('');
+          print(grid);
+          return;
+        }
+        const cat = CATEGORIES.find(c => c.dir === target);
+        if (!cat) { printLine('term-err', `ls: ${esc(target)}: No such file or directory`); return; }
+        const items = byDir(cat.dir);
         const grid = el('div', 'term-ls');
-        grid.innerHTML = PROJECTS.map(p =>
+        grid.innerHTML = items.map(p =>
           `<span class="term-ls-file">${fileSpan(p.file)}</span>` +
           `<span class="term-ls-title">${esc(p.title)}</span>`
         ).join('');
         print(grid);
       },
 
+      cd(arg) {
+        const a = (arg || '').trim().replace(/\/$/, '');
+        if (!a || a === '~' || a === '/' || a === '..') { cwd = null; updatePromptLine(); return; }
+        const cat = CATEGORIES.find(c => c.dir === a);
+        if (!cat) { printLine('term-err', `cd: ${esc(a)}: No such file or directory`); return; }
+        cwd = cat.dir;
+        updatePromptLine();
+      },
+
+      pwd() { printLine('', cwd ? '~/' + cwd : '~'); },
+
+      tree() {
+        const wrap = el('div', 'term-tree');
+        let html = '<div class="tt-root">~</div>';
+        CATEGORIES.forEach((c, i) => {
+          const items = byDir(c.dir);
+          const lastDir = i === CATEGORIES.length - 1;
+          html += `<div class="tt-dir">${lastDir ? '└── ' : '├── '}${dirSpan(c.dir)}</div>`;
+          items.forEach((p, j) => {
+            const lastFile = j === items.length - 1;
+            const branch = (lastDir ? '    ' : '│   ') + (lastFile ? '└── ' : '├── ');
+            html += `<div class="tt-file">${branch}${fileSpan(p.file)}</div>`;
+          });
+        });
+        wrap.innerHTML = html;
+        print(wrap);
+      },
+
       cat(arg) {
         if (!arg) { printLine('term-err', 'cat: missing file operand. Try: ls'); return; }
-        const p = byFile.get(arg) || byFile.get(arg.replace(/\.md$/, '') + '.md');
+        const trimmed = arg.trim().replace(/\/$/, '');
+        if (CATEGORIES.some(c => c.dir === trimmed)) {
+          printLine('term-err', `cat: ${esc(trimmed)}: Is a directory. Try: cd ${esc(trimmed)}`);
+          return;
+        }
+        const p = resolveFile(trimmed);
         if (!p) {
           printLine('term-err', `cat: ${esc(arg)}: No such file. Try: ls`);
           return;
@@ -209,12 +386,17 @@
         const card = el('div', 'term-doc');
         let html = `<div class="td-head"># ${esc(p.title)}</div>`;
         html += p.body.map(par => `<p class="td-p">${esc(par)}</p>`).join('');
-        html += '<div class="td-tags">' +
-          p.tags.map(t => `<span class="td-tag">${esc(t)}</span>`).join('') + '</div>';
+        html += '<div class="td-tags">';
+        if (p.status === 'wip') html += '<span class="td-status td-status-wip">in progress</span>';
+        html += p.tags.map(t => `<span class="td-tag">${esc(t)}</span>`).join('') + '</div>';
         if (p.link) {
           html += `<a class="td-link" href="${esc(p.link.url)}" target="_blank" rel="noopener">→ ${esc(p.link.label)}</a>`;
+        } else if (p.status === 'soon') {
+          html += '<div class="td-nolink">// still in progress</div>';
+        } else if (p.status === 'wip') {
+          html += '<div class="td-nolink">// still in progress, no link yet</div>';
         } else {
-          html += '<div class="td-nolink">// no public link — available on request</div>';
+          html += '<div class="td-nolink">// no public link, available on request</div>';
         }
         card.innerHTML = html;
         print(card);
@@ -222,9 +404,9 @@
 
       open(arg) {
         if (!arg) { printLine('term-err', 'open: missing file operand.'); return; }
-        const p = byFile.get(arg) || byFile.get(arg.replace(/\.md$/, '') + '.md');
+        const p = resolveFile(arg);
         if (!p) { printLine('term-err', `open: ${esc(arg)}: No such file.`); return; }
-        if (!p.link) { printLine('term-dim', `${esc(p.file)} has no public link — available on request.`); return; }
+        if (!p.link) { printLine('term-dim', `${esc(p.file)} has no public link yet.`); return; }
         printLine('', `Opening <span class="term-link">${esc(p.link.url)}</span> …`);
         window.open(p.link.url, '_blank', 'noopener');
       },
@@ -240,11 +422,13 @@
       },
 
       whoami() {
-        printLine('', 'Caitlin Cisar — Language data scientist and linguist working at the intersection of NLP, ML, and LLMs.');
+        printLine('', 'Caitlin Cisar, AI language engineer and linguist working at the intersection of NLP, ML, and LLMs.');
         printLine('term-dim', 'NLP · Linguistics · LLM evaluation · Synthetic Data · Star Trek');
       },
 
       clear() { output.innerHTML = ''; },
+
+      reset() { resetView(); },
 
       banner() {
         const b = el('div', 'term-banner');
@@ -260,7 +444,7 @@
       }
     };
 
-    const KNOWN = ['help', 'ls', 'cat', 'open', 'tags', 'whoami', 'clear'];
+    const KNOWN = ['help', 'ls', 'cd', 'tree', 'cat', 'open', 'pwd', 'tags', 'whoami', 'clear', 'reset'];
 
     function run(raw) {
       const cmd = raw.trim();
@@ -275,7 +459,7 @@
         fn(arg);
       } else {
         printLine('term-err',
-          `command not found: ${esc(name)} — type <span class="term-file" data-cmd="help" role="button" tabindex="0">help</span>`);
+          `command not found: ${esc(name)}. Type <span class="term-file" data-cmd="help" role="button" tabindex="0">help</span>`);
       }
     }
 
@@ -293,7 +477,7 @@
 
     // On mobile, virtual keyboards (esp. Android/Gboard) often don't fire a
     // reliable Enter keydown for a bare input, but the Go/Return key still
-    // submits the surrounding form — so this is what makes Enter work on phones.
+    // submits the surrounding form. This is what makes Enter work on phones.
     if (form) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -309,9 +493,16 @@
         const m = KNOWN.filter(c => c.startsWith(parts[0].toLowerCase()));
         if (m.length === 1) { input.value = m[0] + ' '; sync(); }
         else if (m.length > 1) { printLine('term-dim', m.join('   ')); }
+      } else if (parts[0].toLowerCase() === 'cd') {
+        const frag = parts.slice(1).join(' ').toLowerCase();
+        const m = CATEGORIES.map(c => c.dir).filter(d => d.startsWith(frag));
+        if (m.length === 1) { input.value = 'cd ' + m[0]; sync(); }
+        else if (m.length > 1) { printLine('term-dim', m.join('   ')); }
       } else if (['cat', 'open'].includes(parts[0].toLowerCase())) {
         const frag = parts.slice(1).join(' ').toLowerCase();
-        const m = PROJECTS.map(p => p.file).filter(f => f.startsWith(frag));
+        const pool = cwd ? byDir(cwd) : PROJECTS;
+        let m = pool.map(p => p.file).filter(f => f.startsWith(frag));
+        if (!m.length) m = PROJECTS.map(p => p.file).filter(f => f.startsWith(frag));
         if (m.length === 1) { input.value = parts[0] + ' ' + m[0]; sync(); }
         else if (m.length > 1) { printLine('term-dim', m.join('   ')); }
       }
@@ -345,7 +536,7 @@
       setTimeout(() => input.focus(), 0);
     });
 
-    // Delegate clicks (and keyboard) on file spans → run their data-cmd.
+    // Delegate clicks (and keyboard) on file/dir spans → run their data-cmd.
     function activateTarget(t) {
       const node = t.closest('.term-file');
       if (!node) return false;
@@ -364,14 +555,186 @@
     input.addEventListener('focus', () => line.classList.add('focused'));
     input.addEventListener('blur',  () => line.classList.remove('focused'));
 
+    // ── View mode: Terminal vs. Browse (GUI cards) ──────────────────
+    const chooser    = document.getElementById('viewChooser');
+    const browse     = document.getElementById('projBrowse');
+    const viewToggle = document.getElementById('viewToggle');
+    const viewReset  = document.getElementById('viewReset');
+    const VIEW_KEY    = 'research-view';
+
+    function getStoredView() {
+      try { return localStorage.getItem(VIEW_KEY); } catch (e) { return null; }
+    }
+    function storeView(v) {
+      try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* private mode */ }
+    }
+    function setToggleActive(v) {
+      if (!viewToggle) return;
+      viewToggle.querySelectorAll('.vt-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === v);
+      });
+    }
+
+    const catByDir = new Map(CATEGORIES.map(c => [c.dir, c]));
+
+    function chipHTML(p) {
+      const c = catByDir.get(p.dir);
+      if (!c) return '';
+      return `<span class="proj-chip proj-chip-${esc(c.dir)}">${esc(c.chip)}</span>`;
+    }
+    function linkHTML(p) {
+      if (p.link) return `<a class="proj-link" href="${esc(p.link.url)}" target="_blank" rel="noopener">→ ${esc(p.link.label)}</a>`;
+      if (p.status === 'soon') return '<span class="proj-nolink">// still in progress</span>';
+      if (p.status === 'wip')  return '<span class="proj-nolink">// still in progress, no link yet</span>';
+      return '<span class="proj-nolink">// no public link, available on request</span>';
+    }
+    function cardHTML(p) {
+      return `<article class="proj-card" data-file="${esc(p.file)}" tabindex="0" aria-label="${esc(p.title)}. Click for details.">
+        <div class="proj-card-top">${chipHTML(p)}</div>
+        <h3 class="proj-card-title">${esc(p.title)}</h3>
+        <p class="proj-card-body">${esc(p.body[0])}</p>
+        <div class="proj-card-tags">${p.tags.map(t => `<span class="proj-tag">${esc(t)}</span>`).join('')}</div>
+        ${linkHTML(p)}
+      </article>`;
+    }
+    function renderBrowse() {
+      if (!browse) return;
+      browse.innerHTML = `<div class="proj-grid">${PROJECTS.map(cardHTML).join('')}</div>`;
+    }
+
+    // ── Project modal: shows the full description a card view clips ────
+    function projectModalBodyHTML(p) {
+      let html = '';
+      html += p.body.map(par => `<p class="td-p">${esc(par)}</p>`).join('');
+      html += '<div class="td-tags">';
+      if (p.status === 'wip') html += '<span class="td-status td-status-wip">in progress</span>';
+      html += p.tags.map(t => `<span class="td-tag">${esc(t)}</span>`).join('') + '</div>';
+      if (p.link) {
+        html += `<a class="td-link" href="${esc(p.link.url)}" target="_blank" rel="noopener">→ ${esc(p.link.label)}</a>`;
+      } else if (p.status === 'soon') {
+        html += '<div class="td-nolink">// still in progress</div>';
+      } else if (p.status === 'wip') {
+        html += '<div class="td-nolink">// still in progress, no link yet</div>';
+      } else {
+        html += '<div class="td-nolink">// no public link, available on request</div>';
+      }
+      return html;
+    }
+
+    const projectModal      = document.getElementById('modal-project');
+    const projectModalTitle = document.getElementById('projectModalTitle');
+    const projectModalCode  = document.getElementById('projectModalCode');
+    const projectModalBody  = document.getElementById('projectModalBody');
+    let projectModalLastFocus = null;
+
+    function openProjectModal(p) {
+      if (!projectModal) return;
+      projectModalLastFocus = document.activeElement;
+      if (projectModalTitle) projectModalTitle.textContent = p.title;
+      const c = catByDir.get(p.dir);
+      if (projectModalCode) projectModalCode.textContent = 'LCARS · ' + (c ? c.chip.toUpperCase() : 'PROJ');
+      if (projectModalBody) projectModalBody.innerHTML = projectModalBodyHTML(p);
+      projectModal.hidden = false;
+      document.body.classList.add('modal-open');
+      requestAnimationFrame(() => projectModal.classList.add('show'));
+    }
+    function closeProjectModal() {
+      if (!projectModal || projectModal.hidden) return;
+      projectModal.classList.remove('show');
+      document.body.classList.remove('modal-open');
+      setTimeout(() => { projectModal.hidden = true; }, 220);
+      if (projectModalLastFocus && projectModalLastFocus.focus) projectModalLastFocus.focus();
+    }
+    if (projectModal) {
+      const closeBtn = projectModal.querySelector('[data-close]');
+      if (closeBtn) closeBtn.addEventListener('click', closeProjectModal);
+      projectModal.addEventListener('click', (e) => { if (e.target === projectModal) closeProjectModal(); });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && projectModal && !projectModal.hidden) closeProjectModal();
+    });
+
+    // Whole card opens the modal; the "Read on ..." link inside it still
+    // navigates normally instead of also opening the modal.
+    if (browse) {
+      browse.addEventListener('click', (e) => {
+        if (e.target.closest('a.proj-link')) return;
+        const card = e.target.closest('.proj-card');
+        if (!card) return;
+        const p = byFile.get(card.dataset.file);
+        if (p) openProjectModal(p);
+      });
+      browse.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        if (e.target.closest('a.proj-link')) return;
+        const card = e.target.closest('.proj-card');
+        if (!card) return;
+        e.preventDefault();
+        const p = byFile.get(card.dataset.file);
+        if (p) openProjectModal(p);
+      });
+    }
+
+    function showView(v, opts) {
+      opts = opts || {};
+      if (chooser) chooser.hidden = true;
+      if (v === 'gui') {
+        screen.hidden = true;
+        if (browse) { browse.hidden = false; renderBrowse(); }
+      } else {
+        if (browse) browse.hidden = true;
+        screen.hidden = false;
+        if (opts.focusInput) input.focus();
+      }
+      setToggleActive(v);
+    }
+    function chooseView(v) {
+      storeView(v);
+      showView(v, { focusInput: true });
+    }
+    // Back to the chooser: forgets the saved preference and shows it again.
+    function resetView() {
+      try { localStorage.removeItem(VIEW_KEY); } catch (e) { /* private mode */ }
+      if (browse) browse.hidden = true;
+      screen.hidden = true;
+      setToggleActive(null);
+      if (chooser) chooser.hidden = false;
+    }
+    if (viewToggle) {
+      viewToggle.addEventListener('click', (e) => {
+        const btn = e.target.closest('.vt-btn');
+        if (!btn) return;
+        chooseView(btn.dataset.view);
+      });
+    }
+    if (chooser) {
+      chooser.addEventListener('click', (e) => {
+        const btn = e.target.closest('.vc-opt');
+        if (!btn) return;
+        chooseView(btn.dataset.choose);
+      });
+    }
+    if (viewReset) {
+      viewReset.addEventListener('click', resetView);
+    }
+
     // ── Boot sequence ──────────────────────────────────────────────
-    applyUser();
+    updatePromptLine();
     COMMANDS.banner();
-    printLine('term-dim', "Welcome. Type <span class=\"term-file\" data-cmd=\"help\" role=\"button\" tabindex=\"0\">help</span> to get started, or browse the files below.");
+    printLine('term-dim', "Welcome. Type <span class=\"term-file\" data-cmd=\"help\" role=\"button\" tabindex=\"0\">help</span> to get started, or explore the tree below.");
     printLine('', '');
-    echo('ls');
-    COMMANDS.ls();
-    input.focus();
+    echo('tree');
+    COMMANDS.tree();
+
+    const storedView = getStoredView();
+    if (storedView === 'terminal') {
+      showView('terminal', { focusInput: true });
+    } else if (storedView === 'gui') {
+      showView('gui');
+    } else if (chooser) {
+      chooser.hidden = false;
+      screen.hidden = true;
+    }
   })();
   </script>
 
